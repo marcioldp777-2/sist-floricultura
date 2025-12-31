@@ -24,10 +24,11 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Users2, Pencil, Trash2, Phone, Mail } from "lucide-react";
+import { Plus, Search, Users2, Pencil, Trash2, Phone, Mail, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useCepLookup } from "@/hooks/useCepLookup";
 
 interface Customer {
   id: string;
@@ -82,6 +83,26 @@ export default function CustomersPage() {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const tenantId = profile?.tenant_id;
+  const { lookupCep, isLoading: isCepLoading, formatCep } = useCepLookup();
+
+  const handleCepChange = async (value: string) => {
+    const formattedCep = formatCep(value);
+    setFormData({ ...formData, address_zipcode: formattedCep });
+    
+    if (formattedCep.replace(/\D/g, "").length === 8) {
+      const address = await lookupCep(formattedCep);
+      if (address) {
+        setFormData(prev => ({
+          ...prev,
+          address_zipcode: formattedCep,
+          address_street: address.street,
+          address_neighborhood: address.neighborhood,
+          address_city: address.city,
+          address_state: address.state,
+        }));
+      }
+    }
+  };
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ["customers", tenantId],
@@ -396,13 +417,17 @@ export default function CustomersPage() {
             <div className="grid gap-2">
               <Label>Endereço</Label>
               <div className="grid grid-cols-3 gap-2">
-                <Input
-                  placeholder="CEP"
-                  value={formData.address_zipcode}
-                  onChange={(e) => setFormData({ ...formData, address_zipcode: e.target.value })}
-                  className="col-span-1"
-                  maxLength={10}
-                />
+                <div className="relative col-span-1">
+                  <Input
+                    placeholder="CEP"
+                    value={formData.address_zipcode}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    maxLength={9}
+                  />
+                  {isCepLoading && (
+                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
                 <Input
                   placeholder="Rua"
                   value={formData.address_street}

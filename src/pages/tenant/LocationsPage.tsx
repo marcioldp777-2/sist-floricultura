@@ -31,10 +31,11 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Search, MapPin, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, MapPin, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useCepLookup } from "@/hooks/useCepLookup";
 
 interface Location {
   id: string;
@@ -87,6 +88,26 @@ export default function LocationsPage() {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const tenantId = profile?.tenant_id;
+  const { lookupCep, isLoading: isCepLoading, formatCep } = useCepLookup();
+
+  const handleCepChange = async (value: string) => {
+    const formattedCep = formatCep(value);
+    setFormData({ ...formData, address_zipcode: formattedCep });
+    
+    if (formattedCep.replace(/\D/g, "").length === 8) {
+      const address = await lookupCep(formattedCep);
+      if (address) {
+        setFormData(prev => ({
+          ...prev,
+          address_zipcode: formattedCep,
+          address_street: address.street,
+          address_neighborhood: address.neighborhood,
+          address_city: address.city,
+          address_state: address.state,
+        }));
+      }
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -356,6 +377,21 @@ export default function LocationsPage() {
         
         <div className="grid gap-4">
           <div className="grid grid-cols-3 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor={`${isEdit ? "edit" : "create"}-zipcode`}>CEP</Label>
+              <div className="relative">
+                <Input
+                  id={`${isEdit ? "edit" : "create"}-zipcode`}
+                  value={formData.address_zipcode}
+                  onChange={(e) => handleCepChange(e.target.value)}
+                  placeholder="01234-567"
+                  maxLength={9}
+                />
+                {isCepLoading && (
+                  <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+            </div>
             <div className="col-span-2 grid gap-2">
               <Label htmlFor={`${isEdit ? "edit" : "create"}-street`}>Rua</Label>
               <Input
@@ -365,6 +401,9 @@ export default function LocationsPage() {
                 placeholder="Rua das Flores"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
             <div className="grid gap-2">
               <Label htmlFor={`${isEdit ? "edit" : "create"}-number`}>Número</Label>
               <Input
@@ -374,9 +413,6 @@ export default function LocationsPage() {
                 placeholder="123"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor={`${isEdit ? "edit" : "create"}-complement`}>Complemento</Label>
               <Input
@@ -424,15 +460,6 @@ export default function LocationsPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor={`${isEdit ? "edit" : "create"}-zipcode`}>CEP</Label>
-              <Input
-                id={`${isEdit ? "edit" : "create"}-zipcode`}
-                value={formData.address_zipcode}
-                onChange={(e) => setFormData({ ...formData, address_zipcode: e.target.value })}
-                placeholder="01234-567"
-              />
             </div>
           </div>
         </div>
