@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Building2, MessageSquare, Send, ExternalLink, Pencil, AlertTriangle, Key, Users } from "lucide-react";
+import { Plus, Search, Building2, MessageSquare, Send, ExternalLink, Pencil, AlertTriangle, Key, Users, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -66,10 +66,17 @@ export default function TenantsPage() {
   const [pendingStatus, setPendingStatus] = useState<Tenant["status"] | null>(null);
   const [isStatusConfirmOpen, setIsStatusConfirmOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [tenantAdmins, setTenantAdmins] = useState<(Profile & { email?: string; roles: UserRole[] })[]>([]);
   const [selectedAdminId, setSelectedAdminId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [isLoadingAdmins, setIsLoadingAdmins] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: "",
+    password: "",
+    fullName: "",
+    role: "seller" as Database["public"]["Enums"]["app_role"],
+  });
   const [newTenant, setNewTenant] = useState<Partial<TenantInsert>>({
     name: "",
     slug: "",
@@ -340,6 +347,84 @@ export default function TenantsPage() {
       accountant: "Contador",
     };
     return roleNames[role] || role;
+  };
+
+  const openCreateUserDialog = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setNewUser({
+      email: "",
+      password: "",
+      fullName: "",
+      role: "seller",
+    });
+    setIsCreateUserOpen(true);
+  };
+
+  // Mutation for creating user
+  const createUserMutation = useMutation({
+    mutationFn: async ({ email, password, fullName, tenantId, role }: {
+      email: string;
+      password: string;
+      fullName: string;
+      tenantId: string;
+      role: Database["public"]["Enums"]["app_role"];
+    }) => {
+      const { data, error } = await supabase.functions.invoke("admin-update-user", {
+        body: { 
+          action: "create_user", 
+          email,
+          password,
+          userData: { fullName, tenantId, role }
+        }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      setIsCreateUserOpen(false);
+      setNewUser({ email: "", password: "", fullName: "", role: "seller" });
+      toast({
+        title: "Usuário criado",
+        description: "O usuário foi criado com sucesso.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao criar usuário",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateUser = () => {
+    if (!selectedTenant || !newUser.email || !newUser.password) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Email e senha são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newUser.password.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createUserMutation.mutate({
+      email: newUser.email,
+      password: newUser.password,
+      fullName: newUser.fullName,
+      tenantId: selectedTenant.id,
+      role: newUser.role,
+    });
   };
 
   // Mutation for updating tenant
@@ -945,6 +1030,87 @@ export default function TenantsPage() {
           </DialogContent>
         </Dialog>
 
+        {/* Create User Dialog */}
+        <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Criar Novo Usuário
+              </DialogTitle>
+              <DialogDescription>
+                Criar um novo usuário para o tenant {selectedTenant?.name}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="user-fullname">Nome Completo</Label>
+                <Input
+                  id="user-fullname"
+                  value={newUser.fullName}
+                  onChange={(e) => setNewUser({ ...newUser, fullName: e.target.value })}
+                  placeholder="João Silva"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="user-email">Email *</Label>
+                <Input
+                  id="user-email"
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  placeholder="usuario@email.com"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="user-password">Senha *</Label>
+                <Input
+                  id="user-password"
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="user-role">Função</Label>
+                <Select
+                  value={newUser.role}
+                  onValueChange={(value) => setNewUser({ ...newUser, role: value as Database["public"]["Enums"]["app_role"] })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tenant_owner">Proprietário</SelectItem>
+                    <SelectItem value="manager">Gerente</SelectItem>
+                    <SelectItem value="florist">Florista</SelectItem>
+                    <SelectItem value="seller">Vendedor</SelectItem>
+                    <SelectItem value="driver">Entregador</SelectItem>
+                    <SelectItem value="accountant">Contador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateUserOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreateUser}
+                disabled={createUserMutation.isPending || !newUser.email || !newUser.password}
+              >
+                {createUserMutation.isPending ? "Criando..." : "Criar Usuário"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <div className="rounded-lg border border-border">
           <Table>
             <TableHeader>
@@ -1009,6 +1175,15 @@ export default function TenantsPage() {
                           title="Editar"
                         >
                           <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openCreateUserDialog(tenant)}
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          title="Criar Usuário"
+                        >
+                          <UserPlus className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"

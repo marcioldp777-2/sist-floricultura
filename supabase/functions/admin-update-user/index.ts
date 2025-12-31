@@ -61,6 +61,77 @@ Deno.serve(async (req) => {
     let result;
 
     switch (action) {
+      case "create_user": {
+        const { email: newEmail, password: newPassword, fullName, tenantId, role } = await req.json().catch(() => ({}));
+        
+        // Re-parse original body since we already consumed it above
+        const body = { action, userId, password, email, userData };
+        const createEmail = body.email || newEmail;
+        const createPassword = body.password || newPassword;
+        
+        if (!createEmail || !createPassword) {
+          return new Response(
+            JSON.stringify({ error: "email and password are required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (createPassword.length < 6) {
+          return new Response(
+            JSON.stringify({ error: "Password must be at least 6 characters" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Create the user
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: createEmail,
+          password: createPassword,
+          email_confirm: true,
+          user_metadata: { full_name: userData?.fullName }
+        });
+
+        if (createError) {
+          console.error("Create user error:", createError);
+          return new Response(
+            JSON.stringify({ error: createError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Update profile with tenant_id and full_name if provided
+        if (newUser.user && (userData?.tenantId || userData?.fullName)) {
+          const { error: profileError } = await supabaseAdmin
+            .from("profiles")
+            .update({ 
+              tenant_id: userData?.tenantId || null,
+              full_name: userData?.fullName || null
+            })
+            .eq("id", newUser.user.id);
+
+          if (profileError) {
+            console.error("Profile update error:", profileError);
+          }
+        }
+
+        // Assign role if provided
+        if (newUser.user && userData?.role) {
+          const { error: roleError } = await supabaseAdmin
+            .from("user_roles")
+            .insert({
+              user_id: newUser.user.id,
+              role: userData.role,
+              granted_by: user.id
+            });
+
+          if (roleError) {
+            console.error("Role assignment error:", roleError);
+          }
+        }
+
+        result = { data: { user: newUser.user }, error: null };
+        break;
+      }
+
       case "update_password":
         if (!userId || !password) {
           return new Response(
