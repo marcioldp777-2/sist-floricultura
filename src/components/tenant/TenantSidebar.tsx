@@ -5,6 +5,7 @@ import {
   FolderTree,
   Users,
   Users2,
+  MapPin,
   Settings,
   LogOut,
   Flower2,
@@ -32,6 +33,7 @@ const menuItems = [
   { title: "Produtos", url: "/tenant/products", icon: Package },
   { title: "Categorias", url: "/tenant/categories", icon: FolderTree },
   { title: "Clientes", url: "/tenant/customers", icon: Users2 },
+  { title: "Locais", url: "/tenant/locations", icon: MapPin },
   { title: "Equipe", url: "/tenant/team", icon: Users },
   { title: "Configurações", url: "/tenant/settings", icon: Settings },
 ];

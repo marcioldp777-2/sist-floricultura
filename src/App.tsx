@@ -17,6 +17,7 @@ import OrdersPage from "./pages/tenant/OrdersPage";
 import ProductsPage from "./pages/tenant/ProductsPage";
 import CategoriesPage from "./pages/tenant/CategoriesPage";
 import CustomersPage from "./pages/tenant/CustomersPage";
+import LocationsPage from "./pages/tenant/LocationsPage";
 import TeamPage from "./pages/tenant/TeamPage";
 import SettingsPage from "./pages/tenant/SettingsPage";
 
@@ -113,6 +114,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["tenant_owner", "manager"]}>
                   <TeamPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tenant/locations"
+              element={
+                <ProtectedRoute requiredRoles={["tenant_owner", "manager"]}>
+                  <LocationsPage />
                 </ProtectedRoute>
               }
             />
