@@ -25,9 +25,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Plus, Minus, Trash2, Search } from "lucide-react";
+import { CalendarIcon, Plus, Minus, Trash2, Search, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { useCepLookup } from "@/hooks/useCepLookup";
 
 interface OrderItem {
   product_id: string;
@@ -44,6 +45,9 @@ interface OrderFormData {
   delivery_date: Date | null;
   delivery_time: string;
   delivery_address: string;
+  delivery_cep: string;
+  delivery_number: string;
+  delivery_complement: string;
   location_id: string;
   notes: string;
   items: OrderItem[];
@@ -101,6 +105,9 @@ export function OrderForm({
     delivery_date: null,
     delivery_time: "",
     delivery_address: "",
+    delivery_cep: "",
+    delivery_number: "",
+    delivery_complement: "",
     location_id: "",
     notes: "",
     items: [],
@@ -109,6 +116,24 @@ export function OrderForm({
   });
   const [productSearch, setProductSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
+  const { lookupCep, isLoading: isCepLoading, formatCep } = useCepLookup();
+
+  const handleCepChange = async (value: string) => {
+    const formattedCep = formatCep(value);
+    setFormData({ ...formData, delivery_cep: formattedCep });
+    
+    if (formattedCep.replace(/\D/g, "").length === 8) {
+      const address = await lookupCep(formattedCep);
+      if (address) {
+        const fullAddress = [address.street, address.neighborhood, address.city, address.state].filter(Boolean).join(", ");
+        setFormData(prev => ({
+          ...prev,
+          delivery_cep: formattedCep,
+          delivery_address: fullAddress,
+        }));
+      }
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -124,6 +149,9 @@ export function OrderForm({
         delivery_date: null,
         delivery_time: "",
         delivery_address: "",
+        delivery_cep: "",
+        delivery_number: "",
+        delivery_complement: "",
         location_id: "",
         notes: "",
         items: [],
@@ -374,12 +402,38 @@ export function OrderForm({
 
             {/* Delivery Address */}
             {formData.delivery_type === "delivery" && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Endereço de Entrega</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="relative">
+                    <Input
+                      placeholder="CEP"
+                      value={formData.delivery_cep}
+                      onChange={(e) => handleCepChange(e.target.value)}
+                      maxLength={9}
+                    />
+                    {isCepLoading && (
+                      <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  <Input
+                    placeholder="Número"
+                    value={formData.delivery_number}
+                    onChange={(e) => setFormData({ ...formData, delivery_number: e.target.value })}
+                    maxLength={10}
+                  />
+                  <Input
+                    placeholder="Complemento"
+                    value={formData.delivery_complement}
+                    onChange={(e) => setFormData({ ...formData, delivery_complement: e.target.value })}
+                    className="col-span-2"
+                    maxLength={50}
+                  />
+                </div>
                 <Textarea
                   value={formData.delivery_address}
                   onChange={(e) => setFormData({ ...formData, delivery_address: e.target.value })}
-                  placeholder="Endereço completo para entrega"
+                  placeholder="Endereço completo para entrega (preenchido automaticamente pelo CEP)"
                   rows={2}
                 />
               </div>
