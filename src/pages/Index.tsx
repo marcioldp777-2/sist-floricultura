@@ -59,7 +59,10 @@ export default function Index() {
           {/* Quick actions based on role */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {isSuperAdmin && (
-              <Card className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in border-primary/20">
+              <Card 
+                className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in border-primary/20"
+                onClick={() => navigate("/superadmin")}
+              >
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
@@ -84,7 +87,11 @@ export default function Index() {
             )}
 
             {(isTenantOwner || isSuperAdmin) && (
-              <Card className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in" style={{ animationDelay: "0.1s" }}>
+              <Card 
+                className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in" 
+                style={{ animationDelay: "0.1s" }}
+                onClick={() => navigate("/tenant/settings")}
+              >
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="p-3 bg-accent rounded-xl group-hover:bg-accent/80 transition-colors">
@@ -108,7 +115,11 @@ export default function Index() {
               </Card>
             )}
 
-            <Card className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            <Card 
+              className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in" 
+              style={{ animationDelay: "0.2s" }}
+              onClick={() => navigate("/tenant/products")}
+            >
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-info/10 rounded-xl group-hover:bg-info/20 transition-colors">
@@ -131,7 +142,11 @@ export default function Index() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            <Card 
+              className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in" 
+              style={{ animationDelay: "0.3s" }}
+              onClick={() => navigate("/tenant/orders")}
+            >
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-success/10 rounded-xl group-hover:bg-success/20 transition-colors">
@@ -154,7 +169,11 @@ export default function Index() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in" style={{ animationDelay: "0.4s" }}>
+            <Card 
+              className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in" 
+              style={{ animationDelay: "0.4s" }}
+              onClick={() => navigate("/tenant/reports")}
+            >
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-warning/10 rounded-xl group-hover:bg-warning/20 transition-colors">
@@ -177,7 +196,11 @@ export default function Index() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in" style={{ animationDelay: "0.5s" }}>
+            <Card 
+              className="group hover:shadow-soft transition-all duration-300 cursor-pointer animate-fade-in" 
+              style={{ animationDelay: "0.5s" }}
+              onClick={() => navigate("/tenant/team")}
+            >
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-secondary rounded-xl group-hover:bg-secondary/80 transition-colors">
