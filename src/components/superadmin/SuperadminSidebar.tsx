@@ -22,6 +22,7 @@ const menuItems = [
   { title: "Usuários", url: "/superadmin/users", icon: Users },
   { title: "Roles", url: "/superadmin/roles", icon: Shield },
   { title: "Suporte", url: "/superadmin/support", icon: MessageSquare },
+  { title: "Configurações", url: "/superadmin/settings", icon: Settings },
 ];
 
 export function SuperadminSidebar() {

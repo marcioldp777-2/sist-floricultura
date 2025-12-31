@@ -22,6 +22,7 @@ import TeamPage from "./pages/tenant/TeamPage";
 import TenantSupportPage from "./pages/tenant/SupportPage";
 import SettingsPage from "./pages/tenant/SettingsPage";
 import SuperadminSupportPage from "./pages/superadmin/SupportPage";
+import SuperadminSettingsPage from "./pages/superadmin/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -148,6 +149,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["superadmin"]}>
                   <SuperadminSupportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/superadmin/settings"
+              element={
+                <ProtectedRoute requiredRoles={["superadmin"]}>
+                  <SuperadminSettingsPage />
                 </ProtectedRoute>
               }
             />
