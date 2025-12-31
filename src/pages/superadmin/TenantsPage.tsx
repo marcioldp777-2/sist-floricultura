@@ -30,9 +30,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Building2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Search, Building2, MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
 
 type Tenant = Database["public"]["Tables"]["tenants"]["Row"];
@@ -41,6 +43,10 @@ type TenantInsert = Database["public"]["Tables"]["tenants"]["Insert"];
 export default function TenantsPage() {
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [supportMessage, setSupportMessage] = useState("");
+  const [supportSubject, setSupportSubject] = useState("");
   const [newTenant, setNewTenant] = useState<Partial<TenantInsert>>({
     name: "",
     slug: "",
@@ -48,6 +54,7 @@ export default function TenantsPage() {
     status: "trial",
   });
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: tenants, isLoading } = useQuery({
@@ -92,6 +99,58 @@ export default function TenantsPage() {
     },
   });
 
+  // Mutation for creating support ticket
+  const createSupportTicketMutation = useMutation({
+    mutationFn: async ({ tenantId, subject, message }: { tenantId: string; subject: string; message: string }) => {
+      // Create the ticket
+      const { data: ticket, error: ticketError } = await supabase
+        .from("support_tickets")
+        .insert({
+          tenant_id: tenantId,
+          subject,
+          description: message,
+          category: "general",
+          priority: "medium",
+          created_by: user?.id,
+        })
+        .select()
+        .single();
+
+      if (ticketError) throw ticketError;
+
+      // Add the first message
+      const { error: messageError } = await supabase
+        .from("support_ticket_messages")
+        .insert({
+          ticket_id: ticket.id,
+          message,
+          user_id: user?.id,
+          is_internal: false,
+        });
+
+      if (messageError) throw messageError;
+
+      return ticket;
+    },
+    onSuccess: () => {
+      setIsSupportOpen(false);
+      setSupportMessage("");
+      setSupportSubject("");
+      setSelectedTenant(null);
+      toast({
+        title: "Mensagem enviada",
+        description: "A mensagem de suporte foi enviada ao tenant.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateTenant = () => {
     if (!newTenant.name || !newTenant.slug) {
       toast({
@@ -103,6 +162,30 @@ export default function TenantsPage() {
     }
 
     createTenantMutation.mutate(newTenant as TenantInsert);
+  };
+
+  const handleSendSupport = () => {
+    if (!selectedTenant || !supportSubject.trim() || !supportMessage.trim()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Assunto e mensagem são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createSupportTicketMutation.mutate({
+      tenantId: selectedTenant.id,
+      subject: supportSubject,
+      message: supportMessage,
+    });
+  };
+
+  const openSupportDialog = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setSupportSubject("");
+    setSupportMessage("");
+    setIsSupportOpen(true);
   };
 
   const filteredTenants = tenants?.filter(
@@ -289,6 +372,58 @@ export default function TenantsPage() {
           </Dialog>
         </div>
 
+        {/* Support Dialog */}
+        <Dialog open={isSupportOpen} onOpenChange={setIsSupportOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Suporte Rápido
+              </DialogTitle>
+              <DialogDescription>
+                Enviar mensagem de suporte para {selectedTenant?.name}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="support-subject">Assunto</Label>
+                <Input
+                  id="support-subject"
+                  value={supportSubject}
+                  onChange={(e) => setSupportSubject(e.target.value)}
+                  placeholder="Assunto da mensagem"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="support-message">Mensagem</Label>
+                <Textarea
+                  id="support-message"
+                  value={supportMessage}
+                  onChange={(e) => setSupportMessage(e.target.value)}
+                  placeholder="Digite sua mensagem..."
+                  rows={5}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsSupportOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSendSupport}
+                disabled={createSupportTicketMutation.isPending}
+                className="gap-2"
+              >
+                <Send className="h-4 w-4" />
+                {createSupportTicketMutation.isPending ? "Enviando..." : "Enviar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <div className="rounded-lg border border-border">
           <Table>
             <TableHeader>
@@ -299,13 +434,14 @@ export default function TenantsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Locais</TableHead>
                 <TableHead>Criado em</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-5 w-20" />
                       </TableCell>
@@ -314,7 +450,7 @@ export default function TenantsPage() {
                 ))
               ) : filteredTenants?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Building2 className="h-8 w-8" />
                       <p>Nenhum tenant encontrado</p>
@@ -341,6 +477,17 @@ export default function TenantsPage() {
                     <TableCell>{tenant.max_locations}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(tenant.created_at).toLocaleDateString("pt-BR")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openSupportDialog(tenant)}
+                        className="gap-2 text-primary hover:text-primary"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Suporte
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
