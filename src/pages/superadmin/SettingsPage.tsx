@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SuperadminLayout } from "@/components/superadmin/SuperadminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,77 +9,158 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Mail, Bell, Shield, Database, Globe } from "lucide-react";
+import { Settings, Bell, Shield, Database, Globe, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Json } from "@/integrations/supabase/types";
+
+interface GeneralSettings {
+  systemName: string;
+  systemDescription: string;
+  supportEmail: string;
+  maintenanceMode: boolean;
+}
+
+interface TenantDefaultsSettings {
+  defaultPlan: string;
+  trialDays: number;
+  maxLocationsBasic: number;
+  maxLocationsPro: number;
+  maxLocationsEnterprise: string;
+}
+
+interface NotificationSettings {
+  emailNotifications: boolean;
+  newTenantNotification: boolean;
+  supportTicketNotification: boolean;
+  systemAlertNotification: boolean;
+}
+
+interface SecuritySettings {
+  sessionTimeout: number;
+  maxLoginAttempts: number;
+  passwordMinLength: number;
+  requireTwoFactor: boolean;
+}
+
+interface SystemSetting {
+  id: string;
+  key: string;
+  value: Json;
+  description: string | null;
+}
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
 
-  // General settings state
-  const [systemName, setSystemName] = useState("FloraFlow");
-  const [systemDescription, setSystemDescription] = useState("Sistema de gestão para floriculturas");
-  const [supportEmail, setSupportEmail] = useState("suporte@floraflow.com");
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  // Fetch all settings
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["system-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("system_settings")
+        .select("*");
+      
+      if (error) throw error;
+      return data as SystemSetting[];
+    },
+  });
 
-  // Tenant defaults state
-  const [defaultPlan, setDefaultPlan] = useState("trial");
-  const [trialDays, setTrialDays] = useState("14");
-  const [maxLocationsBasic, setMaxLocationsBasic] = useState("1");
-  const [maxLocationsPro, setMaxLocationsPro] = useState("5");
-  const [maxLocationsEnterprise, setMaxLocationsEnterprise] = useState("unlimited");
-
-  // Notification settings state
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [newTenantNotification, setNewTenantNotification] = useState(true);
-  const [supportTicketNotification, setSupportTicketNotification] = useState(true);
-  const [systemAlertNotification, setSystemAlertNotification] = useState(true);
-
-  // Security settings state
-  const [sessionTimeout, setSessionTimeout] = useState("60");
-  const [maxLoginAttempts, setMaxLoginAttempts] = useState("5");
-  const [passwordMinLength, setPasswordMinLength] = useState("8");
-  const [requireTwoFactor, setRequireTwoFactor] = useState(false);
-
-  const handleSaveGeneral = async () => {
-    setSaving(true);
-    // Simulating save - in production, this would save to database
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSaving(false);
-    toast({
-      title: "Configurações salvas",
-      description: "As configurações gerais foram atualizadas com sucesso.",
-    });
+  // Get specific setting by key
+  const getSetting = <T,>(key: string, defaultValue: T): T => {
+    const setting = settings?.find(s => s.key === key);
+    return setting ? (setting.value as T) : defaultValue;
   };
 
-  const handleSaveTenantDefaults = async () => {
-    setSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSaving(false);
-    toast({
-      title: "Configurações salvas",
-      description: "As configurações de tenants foram atualizadas com sucesso.",
-    });
+  // General settings
+  const generalDefaults: GeneralSettings = {
+    systemName: "FloraFlow",
+    systemDescription: "Sistema de gestão para floriculturas",
+    supportEmail: "suporte@floraflow.com",
+    maintenanceMode: false,
   };
+  const [general, setGeneral] = useState<GeneralSettings>(generalDefaults);
 
-  const handleSaveNotifications = async () => {
-    setSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSaving(false);
-    toast({
-      title: "Configurações salvas",
-      description: "As configurações de notificações foram atualizadas com sucesso.",
-    });
+  // Tenant defaults
+  const tenantDefaults: TenantDefaultsSettings = {
+    defaultPlan: "trial",
+    trialDays: 14,
+    maxLocationsBasic: 1,
+    maxLocationsPro: 5,
+    maxLocationsEnterprise: "unlimited",
   };
+  const [tenantSettings, setTenantSettings] = useState<TenantDefaultsSettings>(tenantDefaults);
 
-  const handleSaveSecurity = async () => {
-    setSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSaving(false);
-    toast({
-      title: "Configurações salvas",
-      description: "As configurações de segurança foram atualizadas com sucesso.",
-    });
+  // Notification settings
+  const notificationDefaults: NotificationSettings = {
+    emailNotifications: true,
+    newTenantNotification: true,
+    supportTicketNotification: true,
+    systemAlertNotification: true,
   };
+  const [notifications, setNotifications] = useState<NotificationSettings>(notificationDefaults);
+
+  // Security settings
+  const securityDefaults: SecuritySettings = {
+    sessionTimeout: 60,
+    maxLoginAttempts: 5,
+    passwordMinLength: 8,
+    requireTwoFactor: false,
+  };
+  const [security, setSecurity] = useState<SecuritySettings>(securityDefaults);
+
+  // Update local state when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      setGeneral(getSetting("general", generalDefaults));
+      setTenantSettings(getSetting("tenant_defaults", tenantDefaults));
+      setNotifications(getSetting("notifications", notificationDefaults));
+      setSecurity(getSetting("security", securityDefaults));
+    }
+  }, [settings]);
+
+  // Mutation to save settings
+  const saveMutation = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: unknown }) => {
+      const { error } = await supabase
+        .from("system_settings")
+        .update({ value: value as Json })
+        .eq("key", key);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["system-settings"] });
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações foram atualizadas com sucesso.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações.",
+      });
+      console.error("Error saving settings:", error);
+    },
+  });
+
+  const handleSaveGeneral = () => saveMutation.mutate({ key: "general", value: general });
+  const handleSaveTenantDefaults = () => saveMutation.mutate({ key: "tenant_defaults", value: tenantSettings });
+  const handleSaveNotifications = () => saveMutation.mutate({ key: "notifications", value: notifications });
+  const handleSaveSecurity = () => saveMutation.mutate({ key: "security", value: security });
+
+  if (isLoading) {
+    return (
+      <SuperadminLayout title="Configurações" description="Carregando configurações...">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </SuperadminLayout>
+    );
+  }
 
   return (
     <SuperadminLayout
@@ -124,8 +205,8 @@ export default function SettingsPage() {
                   <Label htmlFor="systemName">Nome do Sistema</Label>
                   <Input
                     id="systemName"
-                    value={systemName}
-                    onChange={(e) => setSystemName(e.target.value)}
+                    value={general.systemName}
+                    onChange={(e) => setGeneral({ ...general, systemName: e.target.value })}
                     placeholder="Nome do sistema"
                   />
                 </div>
@@ -134,8 +215,8 @@ export default function SettingsPage() {
                   <Input
                     id="supportEmail"
                     type="email"
-                    value={supportEmail}
-                    onChange={(e) => setSupportEmail(e.target.value)}
+                    value={general.supportEmail}
+                    onChange={(e) => setGeneral({ ...general, supportEmail: e.target.value })}
                     placeholder="suporte@exemplo.com"
                   />
                 </div>
@@ -145,8 +226,8 @@ export default function SettingsPage() {
                 <Label htmlFor="systemDescription">Descrição do Sistema</Label>
                 <Textarea
                   id="systemDescription"
-                  value={systemDescription}
-                  onChange={(e) => setSystemDescription(e.target.value)}
+                  value={general.systemDescription}
+                  onChange={(e) => setGeneral({ ...general, systemDescription: e.target.value })}
                   placeholder="Descrição breve do sistema"
                   rows={3}
                 />
@@ -160,14 +241,14 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Switch
-                  checked={maintenanceMode}
-                  onCheckedChange={setMaintenanceMode}
+                  checked={general.maintenanceMode}
+                  onCheckedChange={(checked) => setGeneral({ ...general, maintenanceMode: checked })}
                 />
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveGeneral} disabled={saving}>
-                  {saving ? "Salvando..." : "Salvar Configurações"}
+                <Button onClick={handleSaveGeneral} disabled={saveMutation.isPending}>
+                  {saveMutation.isPending ? "Salvando..." : "Salvar Configurações"}
                 </Button>
               </div>
             </CardContent>
@@ -190,7 +271,10 @@ export default function SettingsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="defaultPlan">Plano Padrão</Label>
-                  <Select value={defaultPlan} onValueChange={setDefaultPlan}>
+                  <Select 
+                    value={tenantSettings.defaultPlan} 
+                    onValueChange={(value) => setTenantSettings({ ...tenantSettings, defaultPlan: value })}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o plano" />
                     </SelectTrigger>
@@ -207,8 +291,8 @@ export default function SettingsPage() {
                   <Input
                     id="trialDays"
                     type="number"
-                    value={trialDays}
-                    onChange={(e) => setTrialDays(e.target.value)}
+                    value={tenantSettings.trialDays}
+                    onChange={(e) => setTenantSettings({ ...tenantSettings, trialDays: parseInt(e.target.value) || 0 })}
                     min="1"
                     max="90"
                   />
@@ -223,8 +307,8 @@ export default function SettingsPage() {
                     <Input
                       id="maxLocationsBasic"
                       type="number"
-                      value={maxLocationsBasic}
-                      onChange={(e) => setMaxLocationsBasic(e.target.value)}
+                      value={tenantSettings.maxLocationsBasic}
+                      onChange={(e) => setTenantSettings({ ...tenantSettings, maxLocationsBasic: parseInt(e.target.value) || 0 })}
                       min="1"
                     />
                   </div>
@@ -233,8 +317,8 @@ export default function SettingsPage() {
                     <Input
                       id="maxLocationsPro"
                       type="number"
-                      value={maxLocationsPro}
-                      onChange={(e) => setMaxLocationsPro(e.target.value)}
+                      value={tenantSettings.maxLocationsPro}
+                      onChange={(e) => setTenantSettings({ ...tenantSettings, maxLocationsPro: parseInt(e.target.value) || 0 })}
                       min="1"
                     />
                   </div>
@@ -242,8 +326,8 @@ export default function SettingsPage() {
                     <Label htmlFor="maxLocationsEnterprise">Enterprise</Label>
                     <Input
                       id="maxLocationsEnterprise"
-                      value={maxLocationsEnterprise}
-                      onChange={(e) => setMaxLocationsEnterprise(e.target.value)}
+                      value={tenantSettings.maxLocationsEnterprise}
+                      onChange={(e) => setTenantSettings({ ...tenantSettings, maxLocationsEnterprise: e.target.value })}
                       placeholder="unlimited"
                     />
                   </div>
@@ -251,8 +335,8 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveTenantDefaults} disabled={saving}>
-                  {saving ? "Salvando..." : "Salvar Configurações"}
+                <Button onClick={handleSaveTenantDefaults} disabled={saveMutation.isPending}>
+                  {saveMutation.isPending ? "Salvando..." : "Salvar Configurações"}
                 </Button>
               </div>
             </CardContent>
@@ -280,8 +364,8 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Switch
-                  checked={emailNotifications}
-                  onCheckedChange={setEmailNotifications}
+                  checked={notifications.emailNotifications}
+                  onCheckedChange={(checked) => setNotifications({ ...notifications, emailNotifications: checked })}
                 />
               </div>
 
@@ -296,9 +380,9 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   <Switch
-                    checked={newTenantNotification}
-                    onCheckedChange={setNewTenantNotification}
-                    disabled={!emailNotifications}
+                    checked={notifications.newTenantNotification}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, newTenantNotification: checked })}
+                    disabled={!notifications.emailNotifications}
                   />
                 </div>
 
@@ -310,9 +394,9 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   <Switch
-                    checked={supportTicketNotification}
-                    onCheckedChange={setSupportTicketNotification}
-                    disabled={!emailNotifications}
+                    checked={notifications.supportTicketNotification}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, supportTicketNotification: checked })}
+                    disabled={!notifications.emailNotifications}
                   />
                 </div>
 
@@ -324,16 +408,16 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   <Switch
-                    checked={systemAlertNotification}
-                    onCheckedChange={setSystemAlertNotification}
-                    disabled={!emailNotifications}
+                    checked={notifications.systemAlertNotification}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, systemAlertNotification: checked })}
+                    disabled={!notifications.emailNotifications}
                   />
                 </div>
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveNotifications} disabled={saving}>
-                  {saving ? "Salvando..." : "Salvar Configurações"}
+                <Button onClick={handleSaveNotifications} disabled={saveMutation.isPending}>
+                  {saveMutation.isPending ? "Salvando..." : "Salvar Configurações"}
                 </Button>
               </div>
             </CardContent>
@@ -359,8 +443,8 @@ export default function SettingsPage() {
                   <Input
                     id="sessionTimeout"
                     type="number"
-                    value={sessionTimeout}
-                    onChange={(e) => setSessionTimeout(e.target.value)}
+                    value={security.sessionTimeout}
+                    onChange={(e) => setSecurity({ ...security, sessionTimeout: parseInt(e.target.value) || 0 })}
                     min="5"
                     max="1440"
                   />
@@ -370,8 +454,8 @@ export default function SettingsPage() {
                   <Input
                     id="maxLoginAttempts"
                     type="number"
-                    value={maxLoginAttempts}
-                    onChange={(e) => setMaxLoginAttempts(e.target.value)}
+                    value={security.maxLoginAttempts}
+                    onChange={(e) => setSecurity({ ...security, maxLoginAttempts: parseInt(e.target.value) || 0 })}
                     min="3"
                     max="10"
                   />
@@ -383,8 +467,8 @@ export default function SettingsPage() {
                 <Input
                   id="passwordMinLength"
                   type="number"
-                  value={passwordMinLength}
-                  onChange={(e) => setPasswordMinLength(e.target.value)}
+                  value={security.passwordMinLength}
+                  onChange={(e) => setSecurity({ ...security, passwordMinLength: parseInt(e.target.value) || 0 })}
                   min="6"
                   max="32"
                   className="w-full md:w-1/2"
@@ -399,14 +483,14 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Switch
-                  checked={requireTwoFactor}
-                  onCheckedChange={setRequireTwoFactor}
+                  checked={security.requireTwoFactor}
+                  onCheckedChange={(checked) => setSecurity({ ...security, requireTwoFactor: checked })}
                 />
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveSecurity} disabled={saving}>
-                  {saving ? "Salvando..." : "Salvar Configurações"}
+                <Button onClick={handleSaveSecurity} disabled={saveMutation.isPending}>
+                  {saveMutation.isPending ? "Salvando..." : "Salvar Configurações"}
                 </Button>
               </div>
             </CardContent>
