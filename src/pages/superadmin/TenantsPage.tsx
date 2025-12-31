@@ -23,6 +23,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -31,7 +41,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Building2, MessageSquare, Send, ExternalLink, Pencil } from "lucide-react";
+import { Plus, Search, Building2, MessageSquare, Send, ExternalLink, Pencil, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,6 +60,8 @@ export default function TenantsPage() {
   const [supportMessage, setSupportMessage] = useState("");
   const [supportSubject, setSupportSubject] = useState("");
   const [editTenant, setEditTenant] = useState<Partial<Tenant>>({});
+  const [pendingStatus, setPendingStatus] = useState<Tenant["status"] | null>(null);
+  const [isStatusConfirmOpen, setIsStatusConfirmOpen] = useState(false);
   const [newTenant, setNewTenant] = useState<Partial<TenantInsert>>({
     name: "",
     slug: "",
@@ -594,9 +606,15 @@ export default function TenantsPage() {
                   <Label htmlFor="edit-status">Status</Label>
                   <Select
                     value={editTenant.status || "trial"}
-                    onValueChange={(value) =>
-                      setEditTenant({ ...editTenant, status: value as Tenant["status"] })
-                    }
+                    onValueChange={(value) => {
+                      const newStatus = value as Tenant["status"];
+                      if (newStatus === "suspended" || newStatus === "cancelled") {
+                        setPendingStatus(newStatus);
+                        setIsStatusConfirmOpen(true);
+                      } else {
+                        setEditTenant({ ...editTenant, status: newStatus });
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -664,6 +682,50 @@ export default function TenantsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Status Confirmation Dialog */}
+        <AlertDialog open={isStatusConfirmOpen} onOpenChange={setIsStatusConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Confirmar Alteração de Status
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingStatus === "suspended" ? (
+                  <>
+                    Você está prestes a <strong>suspender</strong> o tenant <strong>{editTenant.name}</strong>. 
+                    Os usuários não poderão acessar o sistema enquanto o tenant estiver suspenso.
+                  </>
+                ) : (
+                  <>
+                    Você está prestes a <strong>cancelar</strong> o tenant <strong>{editTenant.name}</strong>. 
+                    Esta ação pode impactar permanentemente o acesso dos usuários.
+                  </>
+                )}
+                <br /><br />
+                Deseja continuar?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setPendingStatus(null)}>
+                Não, voltar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  if (pendingStatus) {
+                    setEditTenant({ ...editTenant, status: pendingStatus });
+                  }
+                  setPendingStatus(null);
+                  setIsStatusConfirmOpen(false);
+                }}
+              >
+                Sim, {pendingStatus === "suspended" ? "suspender" : "cancelar"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <div className="rounded-lg border border-border">
           <Table>
