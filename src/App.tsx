@@ -19,7 +19,9 @@ import CategoriesPage from "./pages/tenant/CategoriesPage";
 import CustomersPage from "./pages/tenant/CustomersPage";
 import LocationsPage from "./pages/tenant/LocationsPage";
 import TeamPage from "./pages/tenant/TeamPage";
+import TenantSupportPage from "./pages/tenant/SupportPage";
 import SettingsPage from "./pages/tenant/SettingsPage";
+import SuperadminSupportPage from "./pages/superadmin/SupportPage";
 
 const queryClient = new QueryClient();
 
@@ -126,10 +128,26 @@ const App = () => (
               }
             />
             <Route
+              path="/tenant/support"
+              element={
+                <ProtectedRoute requiredRoles={["tenant_owner", "manager", "florist", "seller", "driver", "accountant"]}>
+                  <TenantSupportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/tenant/settings"
               element={
                 <ProtectedRoute requiredRoles={["tenant_owner"]}>
                   <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/superadmin/support"
+              element={
+                <ProtectedRoute requiredRoles={["superadmin"]}>
+                  <SuperadminSupportPage />
                 </ProtectedRoute>
               }
             />
