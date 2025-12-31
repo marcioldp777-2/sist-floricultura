@@ -14,6 +14,106 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address_city: string | null
+          address_complement: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zipcode: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          address_city?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zipcode?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          address_city?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zipcode?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locations: {
         Row: {
           address_city: string | null
@@ -72,6 +172,232 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "locations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          assigned_driver_id: string | null
+          assigned_florist_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          delivery_address: string | null
+          delivery_date: string | null
+          delivery_fee: number
+          delivery_time: string | null
+          delivery_type: Database["public"]["Enums"]["delivery_type"]
+          discount: number
+          id: string
+          location_id: string | null
+          notes: string | null
+          order_number: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          tenant_id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          assigned_driver_id?: string | null
+          assigned_florist_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          delivery_address?: string | null
+          delivery_date?: string | null
+          delivery_fee?: number
+          delivery_time?: string | null
+          delivery_type?: Database["public"]["Enums"]["delivery_type"]
+          discount?: number
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          order_number?: number
+          status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number
+          tenant_id: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          assigned_driver_id?: string | null
+          assigned_florist_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          delivery_address?: string | null
+          delivery_date?: string | null
+          delivery_fee?: number
+          delivery_time?: string | null
+          delivery_type?: Database["public"]["Enums"]["delivery_type"]
+          discount?: number
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          order_number?: number
+          status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number
+          tenant_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_assigned_florist_id_fkey"
+            columns: ["assigned_florist_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category_id: string | null
+          cost: number | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          price: number
+          sku: string | null
+          stock_quantity: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          price?: number
+          sku?: string | null
+          stock_quantity?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          price?: number
+          sku?: string | null
+          stock_quantity?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -223,6 +549,15 @@ export type Database = {
         | "seller"
         | "driver"
         | "accountant"
+      delivery_type: "pickup" | "delivery"
+      order_status:
+        | "pending"
+        | "confirmed"
+        | "in_production"
+        | "ready"
+        | "out_for_delivery"
+        | "delivered"
+        | "cancelled"
       tenant_plan: "trial" | "basic" | "pro" | "enterprise"
       tenant_status: "active" | "suspended" | "cancelled" | "trial"
     }
@@ -360,6 +695,16 @@ export const Constants = {
         "seller",
         "driver",
         "accountant",
+      ],
+      delivery_type: ["pickup", "delivery"],
+      order_status: [
+        "pending",
+        "confirmed",
+        "in_production",
+        "ready",
+        "out_for_delivery",
+        "delivered",
+        "cancelled",
       ],
       tenant_plan: ["trial", "basic", "pro", "enterprise"],
       tenant_status: ["active", "suspended", "cancelled", "trial"],
