@@ -2,3 +2,6 @@ project_id = "cxmcuziamiufigqggdds"
 
 [functions.admin-update-user]
 verify_jwt = false
+
+[functions.tenant-manage-user]
+verify_jwt = false
