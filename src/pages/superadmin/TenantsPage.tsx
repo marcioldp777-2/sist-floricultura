@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Building2, MessageSquare, Send, ExternalLink, Pencil, AlertTriangle, Key, Users, UserPlus, Trash2 } from "lucide-react";
+import { Plus, Search, Building2, MessageSquare, Send, ExternalLink, Pencil, AlertTriangle, Key, Users, UserPlus, Trash2, Power } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -581,6 +581,36 @@ export default function TenantsPage() {
     },
   });
 
+  // Mutation for toggling user active status
+  const toggleUserActiveMutation = useMutation({
+    mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_active: isActive })
+        .eq("id", userId);
+
+      if (error) throw error;
+      return { success: true };
+    },
+    onSuccess: (_, variables) => {
+      // Update local state
+      setTenantUsers(prev => prev.map(u => 
+        u.id === variables.userId ? { ...u, is_active: variables.isActive } : u
+      ));
+      toast({
+        title: variables.isActive ? "Usuário ativado" : "Usuário desativado",
+        description: `O usuário foi ${variables.isActive ? "ativado" : "desativado"} com sucesso.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao alterar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleUpdateUser = () => {
     if (!selectedUser) return;
     updateUserMutation.mutate({
@@ -593,6 +623,13 @@ export default function TenantsPage() {
   const handleDeleteUser = () => {
     if (!selectedUser) return;
     deleteUserMutation.mutate(selectedUser.id);
+  };
+
+  const handleToggleUserActive = (user: TenantUser) => {
+    toggleUserActiveMutation.mutate({
+      userId: user.id,
+      isActive: !user.is_active,
+    });
   };
 
   // Mutation for updating tenant
@@ -1334,9 +1371,19 @@ export default function TenantsPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={tenantUser.is_active ? "default" : "destructive"}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleUserActive(tenantUser)}
+                            disabled={toggleUserActiveMutation.isPending}
+                            className={tenantUser.is_active 
+                              ? "text-green-600 hover:text-green-700 hover:bg-green-50" 
+                              : "text-destructive hover:text-destructive hover:bg-destructive/10"
+                            }
+                          >
+                            <Power className="h-4 w-4 mr-1" />
                             {tenantUser.is_active ? "Ativo" : "Inativo"}
-                          </Badge>
+                          </Button>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
