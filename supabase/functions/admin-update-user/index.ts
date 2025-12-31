@@ -62,12 +62,8 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "create_user": {
-        const { email: newEmail, password: newPassword, fullName, tenantId, role } = await req.json().catch(() => ({}));
-        
-        // Re-parse original body since we already consumed it above
-        const body = { action, userId, password, email, userData };
-        const createEmail = body.email || newEmail;
-        const createPassword = body.password || newPassword;
+        const createEmail = email;
+        const createPassword = password;
         
         if (!createEmail || !createPassword) {
           return new Response(
