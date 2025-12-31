@@ -41,12 +41,15 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Building2, MessageSquare, Send, ExternalLink, Pencil, AlertTriangle } from "lucide-react";
+import { Plus, Search, Building2, MessageSquare, Send, ExternalLink, Pencil, AlertTriangle, Key, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
 
 type Tenant = Database["public"]["Tables"]["tenants"]["Row"];
 type TenantInsert = Database["public"]["Tables"]["tenants"]["Insert"];
@@ -62,6 +65,11 @@ export default function TenantsPage() {
   const [editTenant, setEditTenant] = useState<Partial<Tenant>>({});
   const [pendingStatus, setPendingStatus] = useState<Tenant["status"] | null>(null);
   const [isStatusConfirmOpen, setIsStatusConfirmOpen] = useState(false);
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+  const [tenantAdmins, setTenantAdmins] = useState<(Profile & { email?: string; roles: UserRole[] })[]>([]);
+  const [selectedAdminId, setSelectedAdminId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [isLoadingAdmins, setIsLoadingAdmins] = useState(false);
   const [newTenant, setNewTenant] = useState<Partial<TenantInsert>>({
     name: "",
     slug: "",
@@ -207,6 +215,131 @@ export default function TenantsPage() {
   const openEditDialog = (tenant: Tenant) => {
     setEditTenant({ ...tenant });
     setIsEditOpen(true);
+  };
+
+  const openPasswordDialog = async (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setTenantAdmins([]);
+    setSelectedAdminId(null);
+    setNewPassword("");
+    setIsPasswordOpen(true);
+    setIsLoadingAdmins(true);
+
+    try {
+      // Get profiles for this tenant
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("tenant_id", tenant.id);
+
+      if (profilesError) throw profilesError;
+
+      if (profiles && profiles.length > 0) {
+        // Get roles for these users
+        const userIds = profiles.map(p => p.id);
+        const { data: roles, error: rolesError } = await supabase
+          .from("user_roles")
+          .select("*")
+          .in("user_id", userIds);
+
+        if (rolesError) throw rolesError;
+
+        // Get emails from edge function
+        const { data: usersData, error: usersError } = await supabase.functions.invoke("admin-update-user", {
+          body: { action: "list_users" }
+        });
+
+        if (usersError) throw usersError;
+
+        const emailMap = new Map<string, string>();
+        if (usersData?.data?.users) {
+          usersData.data.users.forEach((u: { id: string; email: string }) => {
+            emailMap.set(u.id, u.email);
+          });
+        }
+
+        const adminsWithRoles = profiles.map(profile => ({
+          ...profile,
+          email: emailMap.get(profile.id),
+          roles: (roles || []).filter(r => r.user_id === profile.id)
+        }));
+
+        setTenantAdmins(adminsWithRoles);
+      }
+    } catch (error) {
+      console.error("Error loading admins:", error);
+      toast({
+        title: "Erro ao carregar usuários",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingAdmins(false);
+    }
+  };
+
+  // Mutation for updating password
+  const updatePasswordMutation = useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const { data, error } = await supabase.functions.invoke("admin-update-user", {
+        body: { action: "update_password", userId, password }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      setIsPasswordOpen(false);
+      setNewPassword("");
+      setSelectedAdminId(null);
+      toast({
+        title: "Senha atualizada",
+        description: "A senha do usuário foi alterada com sucesso.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao atualizar senha",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdatePassword = () => {
+    if (!selectedAdminId || !newPassword) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Selecione um usuário e informe a nova senha.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updatePasswordMutation.mutate({ userId: selectedAdminId, password: newPassword });
+  };
+
+  const getRoleName = (role: string) => {
+    const roleNames: Record<string, string> = {
+      superadmin: "Super Admin",
+      tenant_owner: "Proprietário",
+      manager: "Gerente",
+      florist: "Florista",
+      seller: "Vendedor",
+      driver: "Entregador",
+      accountant: "Contador",
+    };
+    return roleNames[role] || role;
   };
 
   // Mutation for updating tenant
@@ -727,6 +860,91 @@ export default function TenantsPage() {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* Password Change Dialog */}
+        <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Alterar Senha de Usuário
+              </DialogTitle>
+              <DialogDescription>
+                Selecione um usuário do tenant {selectedTenant?.name} para alterar a senha.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              {isLoadingAdmins ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : tenantAdmins.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-4 text-muted-foreground">
+                  <Users className="h-8 w-8" />
+                  <p>Nenhum usuário encontrado neste tenant</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-2">
+                    <Label>Selecione o usuário</Label>
+                    <Select
+                      value={selectedAdminId || ""}
+                      onValueChange={setSelectedAdminId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um usuário..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tenantAdmins.map((admin) => (
+                          <SelectItem key={admin.id} value={admin.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{admin.full_name || "Sem nome"}</span>
+                              <span className="text-muted-foreground text-xs">
+                                ({admin.email || "sem email"})
+                              </span>
+                              {admin.roles.length > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {getRoleName(admin.roles[0].role)}
+                                </Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {selectedAdminId && (
+                    <div className="grid gap-2">
+                      <Label htmlFor="new-password">Nova Senha</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPasswordOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleUpdatePassword}
+                disabled={updatePasswordMutation.isPending || !selectedAdminId || !newPassword}
+              >
+                {updatePasswordMutation.isPending ? "Alterando..." : "Alterar Senha"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <div className="rounded-lg border border-border">
           <Table>
             <TableHeader>
@@ -791,6 +1009,15 @@ export default function TenantsPage() {
                           title="Editar"
                         >
                           <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openPasswordDialog(tenant)}
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          title="Alterar Senha"
+                        >
+                          <Key className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
