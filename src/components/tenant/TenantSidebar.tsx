@@ -3,6 +3,7 @@ import {
   ShoppingCart,
   Package,
   Users,
+  Users2,
   Settings,
   LogOut,
   Flower2,
@@ -28,6 +29,7 @@ const menuItems = [
   { title: "Dashboard", url: "/tenant", icon: LayoutDashboard },
   { title: "Pedidos", url: "/tenant/orders", icon: ShoppingCart },
   { title: "Produtos", url: "/tenant/products", icon: Package },
+  { title: "Clientes", url: "/tenant/customers", icon: Users2 },
   { title: "Equipe", url: "/tenant/team", icon: Users },
   { title: "Configurações", url: "/tenant/settings", icon: Settings },
 ];
