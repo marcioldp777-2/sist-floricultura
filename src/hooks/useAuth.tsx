@@ -15,6 +15,12 @@ interface UserRole {
   role: "superadmin" | "tenant_owner" | "manager" | "florist" | "seller" | "driver" | "accountant";
 }
 
+interface ImpersonatedTenant {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -28,6 +34,11 @@ interface AuthContextType {
   isTenantOwner: boolean;
   isManager: boolean;
   hasRole: (role: UserRole["role"]) => boolean;
+  // Superadmin impersonation
+  impersonatedTenant: ImpersonatedTenant | null;
+  setImpersonatedTenant: (tenant: ImpersonatedTenant | null) => void;
+  effectiveTenantId: string | null;
+  isImpersonating: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [impersonatedTenant, setImpersonatedTenant] = useState<ImpersonatedTenant | null>(null);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -139,6 +151,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSuperAdmin = hasRole("superadmin");
   const isTenantOwner = hasRole("tenant_owner");
   const isManager = hasRole("manager");
+  
+  // Effective tenant ID - uses impersonated tenant if superadmin is impersonating, otherwise user's own tenant
+  const effectiveTenantId = impersonatedTenant?.id ?? profile?.tenant_id ?? null;
+  const isImpersonating = isSuperAdmin && impersonatedTenant !== null;
 
   return (
     <AuthContext.Provider
@@ -155,6 +171,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isTenantOwner,
         isManager,
         hasRole,
+        impersonatedTenant,
+        setImpersonatedTenant,
+        effectiveTenantId,
+        isImpersonating,
       }}
     >
       {children}
