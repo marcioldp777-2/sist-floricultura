@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps) {
-  const { user, roles, loading } = useAuth();
+  const { user, roles, loading, isSuperAdmin, isImpersonating } = useAuth();
 
   if (loading) {
     return (
@@ -24,6 +24,16 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
 
   // Check if user has required role (if specified)
   if (requiredRoles && requiredRoles.length > 0) {
+    // Superadmins can access tenant routes when impersonating
+    const isTenantRoute = requiredRoles.some(r => 
+      ["tenant_owner", "manager", "florist", "seller", "driver", "accountant"].includes(r)
+    );
+    
+    if (isSuperAdmin && isTenantRoute && isImpersonating) {
+      // Allow superadmin to access tenant routes when impersonating
+      return <>{children}</>;
+    }
+
     const hasRequiredRole = roles.some((r) => requiredRoles.includes(r.role));
     if (!hasRequiredRole) {
       return <Navigate to="/" replace />;

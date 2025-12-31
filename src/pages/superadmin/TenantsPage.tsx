@@ -31,7 +31,8 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Building2, MessageSquare, Send } from "lucide-react";
+import { Plus, Search, Building2, MessageSquare, Send, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,8 +55,9 @@ export default function TenantsPage() {
     status: "trial",
   });
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, setImpersonatedTenant } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: tenants, isLoading } = useQuery({
     queryKey: ["tenants"],
@@ -479,15 +481,33 @@ export default function TenantsPage() {
                       {new Date(tenant.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openSupportDialog(tenant)}
-                        className="gap-2 text-primary hover:text-primary"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        Suporte
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openSupportDialog(tenant)}
+                          className="gap-2 text-muted-foreground hover:text-foreground"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          Suporte
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            setImpersonatedTenant({
+                              id: tenant.id,
+                              name: tenant.name,
+                              slug: tenant.slug,
+                            });
+                            navigate("/tenant");
+                          }}
+                          className="gap-2"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Acessar
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
