@@ -29,6 +29,7 @@ import { CalendarIcon, Plus, Minus, Trash2, Search, Loader2 } from "lucide-react
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useCepLookup } from "@/hooks/useCepLookup";
+import { usePhoneMask } from "@/hooks/usePhoneMask";
 
 interface OrderItem {
   product_id: string;
