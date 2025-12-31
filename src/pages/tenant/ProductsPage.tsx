@@ -31,10 +31,11 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Package, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Package, Pencil, Trash2, ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { ProductImageUpload } from "@/components/tenant/ProductImageUpload";
 
 interface Product {
   id: string;
@@ -46,6 +47,7 @@ interface Product {
   is_active: boolean;
   stock_quantity: number;
   category_id: string | null;
+  image_url: string | null;
   created_at: string;
 }
 
@@ -66,6 +68,7 @@ export default function ProductsPage() {
     sku: "",
     stock_quantity: "0",
     category_id: "",
+    image_url: "",
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -122,6 +125,7 @@ export default function ProductsPage() {
           sku: product.sku.trim() || null,
           stock_quantity: parseInt(product.stock_quantity) || 0,
           category_id: product.category_id || null,
+          image_url: product.image_url || null,
         })
         .select()
         .single();
@@ -133,7 +137,7 @@ export default function ProductsPage() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["category-product-counts"] });
       setIsCreateOpen(false);
-      setNewProduct({ name: "", description: "", price: "", cost: "", sku: "", stock_quantity: "0", category_id: "" });
+      setNewProduct({ name: "", description: "", price: "", cost: "", sku: "", stock_quantity: "0", category_id: "", image_url: "" });
       toast({
         title: "Produto criado",
         description: "O produto foi adicionado ao catálogo.",
@@ -207,13 +211,25 @@ export default function ProductsPage() {
               Novo Produto
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Adicionar Produto</DialogTitle>
               <DialogDescription>Preencha os dados do novo produto.</DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label>Imagem do Produto</Label>
+                {tenantId && (
+                  <ProductImageUpload
+                    tenantId={tenantId}
+                    currentImageUrl={newProduct.image_url || null}
+                    onUpload={(url) => setNewProduct({ ...newProduct, image_url: url })}
+                    onRemove={() => setNewProduct({ ...newProduct, image_url: "" })}
+                  />
+                )}
+              </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="name">Nome do Produto *</Label>
                 <Input
@@ -348,6 +364,7 @@ export default function ProductsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[60px]">Imagem</TableHead>
                 <TableHead>Produto</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>SKU</TableHead>
@@ -361,7 +378,7 @@ export default function ProductsPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => (
+                    {Array.from({ length: 8 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-5 w-20" />
                       </TableCell>
@@ -370,7 +387,7 @@ export default function ProductsPage() {
                 ))
               ) : filteredProducts?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Package className="h-8 w-8" />
                       <p>Nenhum produto encontrado</p>
@@ -380,6 +397,19 @@ export default function ProductsPage() {
               ) : (
                 filteredProducts?.map((product) => (
                   <TableRow key={product.id}>
+                    <TableCell>
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="h-10 w-10 rounded-md object-cover"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
+                          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div>
                         <p className="font-medium">{product.name}</p>
