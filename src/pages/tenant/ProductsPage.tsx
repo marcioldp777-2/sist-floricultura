@@ -22,6 +22,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Package, Pencil, Trash2 } from "lucide-react";
@@ -38,11 +45,18 @@ interface Product {
   sku: string | null;
   is_active: boolean;
   stock_quantity: number;
+  category_id: string | null;
   created_at: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
 }
 
 export default function ProductsPage() {
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -51,11 +65,30 @@ export default function ProductsPage() {
     cost: "",
     sku: "",
     stock_quantity: "0",
+    category_id: "",
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const tenantId = profile?.tenant_id;
+
+  const { data: categories } = useQuery({
+    queryKey: ["categories", tenantId],
+    queryFn: async () => {
+      if (!tenantId) return [];
+
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name")
+        .eq("tenant_id", tenantId)
+        .eq("is_active", true)
+        .order("name");
+
+      if (error) throw error;
+      return data as Category[];
+    },
+    enabled: !!tenantId,
+  });
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["products", tenantId],
@@ -82,12 +115,13 @@ export default function ProductsPage() {
         .from("products")
         .insert({
           tenant_id: tenantId,
-          name: product.name,
-          description: product.description || null,
+          name: product.name.trim(),
+          description: product.description.trim() || null,
           price: parseFloat(product.price) || 0,
           cost: parseFloat(product.cost) || null,
-          sku: product.sku || null,
+          sku: product.sku.trim() || null,
           stock_quantity: parseInt(product.stock_quantity) || 0,
+          category_id: product.category_id || null,
         })
         .select()
         .single();
@@ -97,8 +131,9 @@ export default function ProductsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["category-product-counts"] });
       setIsCreateOpen(false);
-      setNewProduct({ name: "", description: "", price: "", cost: "", sku: "", stock_quantity: "0" });
+      setNewProduct({ name: "", description: "", price: "", cost: "", sku: "", stock_quantity: "0", category_id: "" });
       toast({
         title: "Produto criado",
         description: "O produto foi adicionado ao catálogo.",
@@ -120,6 +155,7 @@ export default function ProductsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["category-product-counts"] });
       toast({
         title: "Produto excluído",
         description: "O produto foi removido do catálogo.",
@@ -135,7 +171,7 @@ export default function ProductsPage() {
   });
 
   const handleCreateProduct = () => {
-    if (!newProduct.name || !newProduct.price) {
+    if (!newProduct.name.trim() || !newProduct.price) {
       toast({
         title: "Campos obrigatórios",
         description: "Nome e preço são obrigatórios.",
@@ -146,11 +182,18 @@ export default function ProductsPage() {
     createProductMutation.mutate(newProduct);
   };
 
-  const filteredProducts = products?.filter(
-    (product) =>
+  const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return null;
+    return categories?.find((c) => c.id === categoryId)?.name;
+  };
+
+  const filteredProducts = products?.filter((product) => {
+    const matchesSearch =
       product.name.toLowerCase().includes(search.toLowerCase()) ||
-      product.sku?.toLowerCase().includes(search.toLowerCase())
-  );
+      product.sku?.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = categoryFilter === "all" || product.category_id === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <TenantLayout
@@ -172,13 +215,33 @@ export default function ProductsPage() {
 
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Nome do Produto</Label>
+                <Label htmlFor="name">Nome do Produto *</Label>
                 <Input
                   id="name"
                   value={newProduct.name}
                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                   placeholder="Bouquet de Rosas"
+                  maxLength={100}
                 />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="category">Categoria</Label>
+                <Select
+                  value={newProduct.category_id}
+                  onValueChange={(value) => setNewProduct({ ...newProduct, category_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid gap-2">
@@ -188,12 +251,13 @@ export default function ProductsPage() {
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                   placeholder="Descrição do produto..."
+                  maxLength={500}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="price">Preço (R$)</Label>
+                  <Label htmlFor="price">Preço (R$) *</Label>
                   <Input
                     id="price"
                     type="number"
@@ -225,6 +289,7 @@ export default function ProductsPage() {
                     value={newProduct.sku}
                     onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
                     placeholder="PROD-001"
+                    maxLength={50}
                   />
                 </div>
 
@@ -254,14 +319,29 @@ export default function ProductsPage() {
       }
     >
       <div className="space-y-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar produtos..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar produtos..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas categorias</SelectItem>
+              {categories?.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="rounded-lg border border-border">
@@ -269,6 +349,7 @@ export default function ProductsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Produto</TableHead>
+                <TableHead>Categoria</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Preço</TableHead>
                 <TableHead>Estoque</TableHead>
@@ -280,7 +361,7 @@ export default function ProductsPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-5 w-20" />
                       </TableCell>
@@ -289,7 +370,7 @@ export default function ProductsPage() {
                 ))
               ) : filteredProducts?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Package className="h-8 w-8" />
                       <p>Nenhum produto encontrado</p>
@@ -306,6 +387,13 @@ export default function ProductsPage() {
                           {product.description || "-"}
                         </p>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {getCategoryName(product.category_id) ? (
+                        <Badge variant="outline">{getCategoryName(product.category_id)}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{product.sku || "-"}</TableCell>
                     <TableCell className="font-medium">

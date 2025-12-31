@@ -15,6 +15,7 @@ import RolesPage from "./pages/superadmin/RolesPage";
 import TenantDashboard from "./pages/tenant/TenantDashboard";
 import OrdersPage from "./pages/tenant/OrdersPage";
 import ProductsPage from "./pages/tenant/ProductsPage";
+import CategoriesPage from "./pages/tenant/CategoriesPage";
 import CustomersPage from "./pages/tenant/CustomersPage";
 import TeamPage from "./pages/tenant/TeamPage";
 import SettingsPage from "./pages/tenant/SettingsPage";
@@ -88,6 +89,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["tenant_owner", "manager"]}>
                   <ProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tenant/categories"
+              element={
+                <ProtectedRoute requiredRoles={["tenant_owner", "manager"]}>
+                  <CategoriesPage />
                 </ProtectedRoute>
               }
             />
