@@ -36,6 +36,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useCepLookup } from "@/hooks/useCepLookup";
+import { usePhoneMask } from "@/hooks/usePhoneMask";
 
 interface Location {
   id: string;
@@ -89,6 +90,7 @@ export default function LocationsPage() {
   const { profile } = useAuth();
   const tenantId = profile?.tenant_id;
   const { lookupCep, isLoading: isCepLoading, formatCep } = useCepLookup();
+  const { formatPhone } = usePhoneMask();
 
   const handleCepChange = async (value: string) => {
     const formattedCep = formatCep(value);
@@ -366,8 +368,9 @@ export default function LocationsPage() {
           <Input
             id={`${isEdit ? "edit" : "create"}-phone`}
             value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
             placeholder="(11) 99999-9999"
+            maxLength={16}
           />
         </div>
       </div>
