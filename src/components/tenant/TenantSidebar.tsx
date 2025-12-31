@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   Flower2,
+  LifeBuoy,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +36,7 @@ const menuItems = [
   { title: "Clientes", url: "/tenant/customers", icon: Users2 },
   { title: "Locais", url: "/tenant/locations", icon: MapPin },
   { title: "Equipe", url: "/tenant/team", icon: Users },
+  { title: "Suporte", url: "/tenant/support", icon: LifeBuoy },
   { title: "Configurações", url: "/tenant/settings", icon: Settings },
 ];
 
