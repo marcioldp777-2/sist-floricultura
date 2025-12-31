@@ -1,4 +1,4 @@
-import { Building2, Users, Shield, LogOut, LayoutDashboard } from "lucide-react";
+import { Building2, Users, Shield, LogOut, LayoutDashboard, MessageSquare, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,7 @@ const menuItems = [
   { title: "Tenants", url: "/superadmin/tenants", icon: Building2 },
   { title: "Usuários", url: "/superadmin/users", icon: Users },
   { title: "Roles", url: "/superadmin/roles", icon: Shield },
+  { title: "Suporte", url: "/superadmin/support", icon: MessageSquare },
 ];
 
 export function SuperadminSidebar() {
