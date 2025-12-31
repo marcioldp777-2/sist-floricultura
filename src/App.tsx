@@ -12,6 +12,11 @@ import SuperadminDashboard from "./pages/superadmin/SuperadminDashboard";
 import TenantsPage from "./pages/superadmin/TenantsPage";
 import UsersPage from "./pages/superadmin/UsersPage";
 import RolesPage from "./pages/superadmin/RolesPage";
+import TenantDashboard from "./pages/tenant/TenantDashboard";
+import OrdersPage from "./pages/tenant/OrdersPage";
+import ProductsPage from "./pages/tenant/ProductsPage";
+import TeamPage from "./pages/tenant/TeamPage";
+import SettingsPage from "./pages/tenant/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +61,48 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["superadmin"]}>
                   <RolesPage />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Tenant Backoffice Routes */}
+            <Route
+              path="/tenant"
+              element={
+                <ProtectedRoute requiredRoles={["tenant_owner", "manager", "florist", "seller", "driver", "accountant"]}>
+                  <TenantDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tenant/orders"
+              element={
+                <ProtectedRoute requiredRoles={["tenant_owner", "manager", "florist", "seller", "driver", "accountant"]}>
+                  <OrdersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tenant/products"
+              element={
+                <ProtectedRoute requiredRoles={["tenant_owner", "manager"]}>
+                  <ProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tenant/team"
+              element={
+                <ProtectedRoute requiredRoles={["tenant_owner", "manager"]}>
+                  <TeamPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tenant/settings"
+              element={
+                <ProtectedRoute requiredRoles={["tenant_owner"]}>
+                  <SettingsPage />
                 </ProtectedRoute>
               }
             />
