@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TenantLayout } from "@/components/tenant/TenantLayout";
+import { ThemePreview } from "@/components/tenant/ThemePreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +23,8 @@ import {
   CreditCard,
   Bell,
   Shield,
-  Image as ImageIcon
+  Image as ImageIcon,
+  RotateCcw
 } from "lucide-react";
 
 export default function SettingsPage() {
@@ -402,54 +404,94 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="primary_color">Cor Principal</Label>
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-lg border border-border cursor-pointer overflow-hidden"
-                        onClick={() => document.getElementById("color-picker")?.click()}
-                      >
-                        <input
-                          id="color-picker"
-                          type="color"
-                          value={formData.primary_color}
-                          onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                          className="w-full h-full cursor-pointer border-0"
-                        />
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {/* Color Picker Section */}
+                  <div className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="primary_color">Cor Principal</Label>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-14 h-14 rounded-lg border-2 border-border cursor-pointer overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                          onClick={() => document.getElementById("color-picker")?.click()}
+                        >
+                          <input
+                            id="color-picker"
+                            type="color"
+                            value={formData.primary_color}
+                            onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
+                            className="w-full h-full cursor-pointer border-0"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <Input
+                            value={formData.primary_color}
+                            onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
+                            placeholder="#10b981"
+                            className="max-w-[150px] font-mono"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => setFormData({ ...formData, primary_color: "#10b981" })}
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            Restaurar padrão
+                          </Button>
+                        </div>
                       </div>
-                      <Input
-                        value={formData.primary_color}
-                        onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                        placeholder="#10b981"
-                        className="flex-1 max-w-[150px]"
-                      />
                       <p className="text-sm text-muted-foreground">
-                        Esta cor será usada em botões, links e elementos de destaque.
+                        Clique na caixa de cor ou digite um código hexadecimal
                       </p>
+                    </div>
+
+                    {/* Preset Colors */}
+                    <div className="space-y-2">
+                      <Label className="text-sm">Cores sugeridas</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { color: "#10b981", name: "Esmeralda" },
+                          { color: "#8b5cf6", name: "Violeta" },
+                          { color: "#ec4899", name: "Rosa" },
+                          { color: "#f59e0b", name: "Âmbar" },
+                          { color: "#3b82f6", name: "Azul" },
+                          { color: "#ef4444", name: "Vermelho" },
+                          { color: "#14b8a6", name: "Teal" },
+                          { color: "#f97316", name: "Laranja" },
+                        ].map((preset) => (
+                          <button
+                            key={preset.color}
+                            type="button"
+                            className={`w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 ${
+                              formData.primary_color.toLowerCase() === preset.color
+                                ? "border-foreground ring-2 ring-offset-2 ring-offset-background"
+                                : "border-transparent"
+                            }`}
+                            style={{ backgroundColor: preset.color }}
+                            onClick={() => setFormData({ ...formData, primary_color: preset.color })}
+                            title={preset.name}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Color Preview */}
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <p className="text-sm font-medium mb-3">Prévia:</p>
-                    <div className="flex items-center gap-3">
-                      <Button style={{ backgroundColor: formData.primary_color }} className="text-white">
-                        Botão Primário
-                      </Button>
-                      <span style={{ color: formData.primary_color }} className="font-medium">
-                        Texto em destaque
-                      </span>
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: formData.primary_color }}
-                      />
-                    </div>
+                  {/* Live Preview Section */}
+                  <div className="space-y-2">
+                    <Label className="text-sm">Preview em tempo real</Label>
+                    <ThemePreview
+                      primaryColor={formData.primary_color}
+                      logoUrl={logoUrl}
+                      companyName={formData.name || "Minha Floricultura"}
+                    />
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-4">
+                <Separator />
+
+                <div className="flex justify-end">
                   <Button type="submit" disabled={updateTenantMutation.isPending}>
                     {updateTenantMutation.isPending ? (
                       <>
