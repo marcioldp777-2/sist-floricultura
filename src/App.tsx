@@ -4,9 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import SuperadminDashboard from "./pages/superadmin/SuperadminDashboard";
+import TenantsPage from "./pages/superadmin/TenantsPage";
+import UsersPage from "./pages/superadmin/UsersPage";
+import RolesPage from "./pages/superadmin/RolesPage";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +25,41 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Superadmin Routes */}
+            <Route
+              path="/superadmin"
+              element={
+                <ProtectedRoute requiredRoles={["superadmin"]}>
+                  <SuperadminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/superadmin/tenants"
+              element={
+                <ProtectedRoute requiredRoles={["superadmin"]}>
+                  <TenantsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/superadmin/users"
+              element={
+                <ProtectedRoute requiredRoles={["superadmin"]}>
+                  <UsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/superadmin/roles"
+              element={
+                <ProtectedRoute requiredRoles={["superadmin"]}>
+                  <RolesPage />
+                </ProtectedRoute>
+              }
+            />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
