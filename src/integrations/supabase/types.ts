@@ -478,6 +478,97 @@ export type Database = {
           },
         ]
       }
+      delivery_distance_ranges: {
+        Row: {
+          created_at: string
+          delivery_time_estimate: string | null
+          fee: number
+          id: string
+          is_active: boolean
+          max_km: number
+          min_km: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_time_estimate?: string | null
+          fee: number
+          id?: string
+          is_active?: boolean
+          max_km: number
+          min_km?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_time_estimate?: string | null
+          fee?: number
+          id?: string
+          is_active?: boolean
+          max_km?: number
+          min_km?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_distance_ranges_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_regions: {
+        Row: {
+          cep_prefixes: string[] | null
+          created_at: string
+          delivery_time_estimate: string | null
+          fee: number
+          id: string
+          is_active: boolean
+          name: string
+          neighborhoods: string[] | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cep_prefixes?: string[] | null
+          created_at?: string
+          delivery_time_estimate?: string | null
+          fee: number
+          id?: string
+          is_active?: boolean
+          name: string
+          neighborhoods?: string[] | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          cep_prefixes?: string[] | null
+          created_at?: string
+          delivery_time_estimate?: string | null
+          fee?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          neighborhoods?: string[] | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_regions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locations: {
         Row: {
           address_city: string | null
@@ -491,6 +582,9 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          is_pickup_location: boolean
+          latitude: number | null
+          longitude: number | null
           name: string
           phone: string | null
           tenant_id: string
@@ -509,6 +603,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_pickup_location?: boolean
+          latitude?: number | null
+          longitude?: number | null
           name: string
           phone?: string | null
           tenant_id: string
@@ -527,6 +624,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_pickup_location?: boolean
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           phone?: string | null
           tenant_id?: string
@@ -1385,6 +1485,66 @@ export type Database = {
           },
         ]
       }
+      store_carts: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          delivery_cep: string | null
+          delivery_fee: number | null
+          expires_at: string
+          id: string
+          items: Json
+          session_id: string
+          subtotal: number
+          tenant_id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          delivery_cep?: string | null
+          delivery_fee?: number | null
+          expires_at?: string
+          id?: string
+          items?: Json
+          session_id: string
+          subtotal?: number
+          tenant_id: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          delivery_cep?: string | null
+          delivery_fee?: number | null
+          expires_at?: string
+          id?: string
+          items?: Json
+          session_id?: string
+          subtotal?: number
+          tenant_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_carts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_carts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_ticket_messages: {
         Row: {
           created_at: string
@@ -1499,6 +1659,77 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      tenant_store_settings: {
+        Row: {
+          accepts_card: boolean
+          accepts_cash: boolean
+          accepts_pix: boolean
+          created_at: string
+          delivery_base_fee: number
+          delivery_calculation_type: Database["public"]["Enums"]["delivery_calculation_type"]
+          delivery_per_km_fee: number
+          free_delivery_above: number | null
+          id: string
+          is_store_enabled: boolean
+          min_order_value: number | null
+          pickup_enabled: boolean
+          store_banner_url: string | null
+          store_description: string | null
+          store_mode: Database["public"]["Enums"]["store_mode"]
+          tenant_id: string
+          updated_at: string
+          whatsapp_number: string | null
+        }
+        Insert: {
+          accepts_card?: boolean
+          accepts_cash?: boolean
+          accepts_pix?: boolean
+          created_at?: string
+          delivery_base_fee?: number
+          delivery_calculation_type?: Database["public"]["Enums"]["delivery_calculation_type"]
+          delivery_per_km_fee?: number
+          free_delivery_above?: number | null
+          id?: string
+          is_store_enabled?: boolean
+          min_order_value?: number | null
+          pickup_enabled?: boolean
+          store_banner_url?: string | null
+          store_description?: string | null
+          store_mode?: Database["public"]["Enums"]["store_mode"]
+          tenant_id: string
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Update: {
+          accepts_card?: boolean
+          accepts_cash?: boolean
+          accepts_pix?: boolean
+          created_at?: string
+          delivery_base_fee?: number
+          delivery_calculation_type?: Database["public"]["Enums"]["delivery_calculation_type"]
+          delivery_per_km_fee?: number
+          free_delivery_above?: number | null
+          id?: string
+          is_store_enabled?: boolean
+          min_order_value?: number | null
+          pickup_enabled?: boolean
+          store_banner_url?: string | null
+          store_description?: string | null
+          store_mode?: Database["public"]["Enums"]["store_mode"]
+          tenant_id?: string
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_store_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tenants: {
         Row: {
@@ -1616,6 +1847,7 @@ export type Database = {
         | "seller"
         | "driver"
         | "accountant"
+      delivery_calculation_type: "per_km" | "distance_ranges" | "by_region"
       delivery_type: "pickup" | "delivery"
       light_level: "full_sun" | "partial_shade" | "shade" | "indirect_light"
       notification_channel: "email" | "whatsapp" | "push" | "sms"
@@ -1645,6 +1877,7 @@ export type Database = {
         | "expired"
         | "damaged"
         | "returned"
+      store_mode: "full_checkout" | "whatsapp" | "order_only"
       tenant_plan: "trial" | "basic" | "pro" | "enterprise"
       tenant_status: "active" | "suspended" | "cancelled" | "trial"
       watering_frequency:
@@ -1791,6 +2024,7 @@ export const Constants = {
         "driver",
         "accountant",
       ],
+      delivery_calculation_type: ["per_km", "distance_ranges", "by_region"],
       delivery_type: ["pickup", "delivery"],
       light_level: ["full_sun", "partial_shade", "shade", "indirect_light"],
       notification_channel: ["email", "whatsapp", "push", "sms"],
@@ -1823,6 +2057,7 @@ export const Constants = {
         "damaged",
         "returned",
       ],
+      store_mode: ["full_checkout", "whatsapp", "order_only"],
       tenant_plan: ["trial", "basic", "pro", "enterprise"],
       tenant_status: ["active", "suspended", "cancelled", "trial"],
       watering_frequency: [
