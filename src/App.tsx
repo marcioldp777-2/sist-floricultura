@@ -16,6 +16,7 @@ import TenantDashboard from "./pages/tenant/TenantDashboard";
 import OrdersPage from "./pages/tenant/OrdersPage";
 import ProductsPage from "./pages/tenant/ProductsPage";
 import BotanicalProductsPage from "./pages/tenant/BotanicalProductsPage";
+import QRCodesPage from "./pages/tenant/QRCodesPage";
 import CategoriesPage from "./pages/tenant/CategoriesPage";
 import CustomersPage from "./pages/tenant/CustomersPage";
 import LocationsPage from "./pages/tenant/LocationsPage";
@@ -107,6 +108,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["tenant_owner", "manager"]}>
                   <BotanicalProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tenant/qr-codes"
+              element={
+                <ProtectedRoute requiredRoles={["tenant_owner", "manager"]}>
+                  <QRCodesPage />
                 </ProtectedRoute>
               }
             />
