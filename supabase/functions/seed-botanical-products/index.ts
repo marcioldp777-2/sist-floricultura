@@ -427,7 +427,7 @@ Deno.serve(async (req) => {
           name: `Kit 3 Suculentas Echeveria ${color}`,
           color,
           size: 'Kit 3',
-          selling_unit: 'box',
+          selling_unit: 'kit',
           unit_quantity: 3,
           price: 69.90,
           cost_price: 20.00,
