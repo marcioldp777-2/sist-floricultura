@@ -25,6 +25,7 @@ import TenantSupportPage from "./pages/tenant/SupportPage";
 import SettingsPage from "./pages/tenant/SettingsPage";
 import SuperadminSupportPage from "./pages/superadmin/SupportPage";
 import SuperadminSettingsPage from "./pages/superadmin/SettingsPage";
+import ProductLanding from "./pages/public/ProductLanding";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Public QR Code Landing */}
+            <Route path="/q/:shortCode" element={<ProductLanding />} />
             
             {/* Superadmin Routes */}
             <Route
