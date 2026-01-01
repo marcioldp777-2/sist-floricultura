@@ -38,7 +38,8 @@ import {
   Sun,
   Droplets,
   AlertTriangle,
-  QrCode,
+  Database,
+  Loader2,
 } from "lucide-react";
 import { BotanicalProductForm } from "@/components/tenant/BotanicalProductForm";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
@@ -85,6 +86,7 @@ export default function BotanicalProductsPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<BotanicalProduct | null>(null);
 
   // Fetch products
@@ -227,11 +229,60 @@ export default function BotanicalProductsPage() {
     setIsEditOpen(true);
   };
 
+  const handleSeedData = async () => {
+    if (!tenantId) return;
+    
+    const confirmed = confirm(
+      "Isso irá popular o banco com 5 produtos de exemplo, variantes, estoque e campanhas QR. Deseja continuar?"
+    );
+    if (!confirmed) return;
+
+    setIsSeeding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("seed-botanical-products", {
+        body: { tenant_id: tenantId },
+      });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["botanical-products"] });
+      queryClient.invalidateQueries({ queryKey: ["locations"] });
+      queryClient.invalidateQueries({ queryKey: ["product-variants"] });
+      queryClient.invalidateQueries({ queryKey: ["qr-codes"] });
+
+      toast({
+        title: "Dados de exemplo criados!",
+        description: `${data.data.products} produtos, ${data.data.variants} variantes, ${data.data.stockLots} lotes e ${data.data.qrCodes} QR codes foram criados.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao popular dados",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return (
     <TenantLayout title="Produtos Botânicos" description="Gerencie seu catálogo de plantas e flores">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <Button
+            variant="outline"
+            onClick={handleSeedData}
+            disabled={isSeeding}
+            className="gap-2"
+          >
+            {isSeeding ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Database className="h-4 w-4" />
+            )}
+            {isSeeding ? "Populando..." : "Popular dados de exemplo"}
+          </Button>
           <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             Novo Produto
