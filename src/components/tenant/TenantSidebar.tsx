@@ -11,6 +11,7 @@ import {
   Flower2,
   LifeBuoy,
   BarChart3,
+  QrCode,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +35,7 @@ const menuItems = [
   { title: "Pedidos", url: "/tenant/orders", icon: ShoppingCart },
   { title: "Produtos", url: "/tenant/products", icon: Package },
   { title: "Catálogo Botânico", url: "/tenant/botanical-products", icon: Flower2 },
+  { title: "QR Codes", url: "/tenant/qr-codes", icon: QrCode },
   { title: "Categorias", url: "/tenant/categories", icon: FolderTree },
   { title: "Clientes", url: "/tenant/customers", icon: Users2 },
   { title: "Locais", url: "/tenant/locations", icon: MapPin },
