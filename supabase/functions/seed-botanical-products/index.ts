@@ -24,13 +24,10 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Before seeding, clear existing demo data for this tenant
-    // (we avoid upsert+onConflict because the DB may not have the required unique constraints)
-    const cleanupTables = ['qr_codes', 'stock_lots', 'product_variants', 'botanical_products', 'locations'] as const
-    for (const table of cleanupTables) {
-      const { error } = await supabase.from(table).delete().eq('tenant_id', tenant_id)
-      if (error) throw error
-    }
+    // Clear QR codes and stock_lots first (they reference other tables)
+    // We need to delete these before upserting products/variants/locations
+    await supabase.from('qr_codes').delete().eq('tenant_id', tenant_id)
+    await supabase.from('stock_lots').delete().eq('tenant_id', tenant_id)
 
     // 1. Create 2 store locations
     const locations = [
@@ -66,7 +63,7 @@ Deno.serve(async (req) => {
 
     const { data: createdLocations, error: locError } = await supabase
       .from('locations')
-      .insert(locations)
+      .upsert(locations, { onConflict: 'tenant_id,code' })
       .select()
 
     if (locError) throw locError
@@ -303,7 +300,7 @@ Deno.serve(async (req) => {
 
     const { data: createdProducts, error: prodError } = await supabase
       .from('botanical_products')
-      .insert(botanicalProducts)
+      .upsert(botanicalProducts, { onConflict: 'tenant_id,sku' })
       .select()
 
     if (prodError) throw prodError
@@ -540,7 +537,7 @@ Deno.serve(async (req) => {
 
     const { data: createdVariants, error: varError } = await supabase
       .from('product_variants')
-      .insert(productVariants)
+      .upsert(productVariants, { onConflict: 'tenant_id,sku' })
       .select()
 
     if (varError) throw varError
@@ -585,7 +582,7 @@ Deno.serve(async (req) => {
 
     const { error: stockError } = await supabase
       .from('stock_lots')
-      .insert(stockLots)
+      .upsert(stockLots, { onConflict: 'tenant_id,lot_number' })
 
     if (stockError) throw stockError
 
