@@ -33,6 +33,7 @@ const menuItems = [
   { title: "Dashboard", url: "/tenant", icon: LayoutDashboard },
   { title: "Pedidos", url: "/tenant/orders", icon: ShoppingCart },
   { title: "Produtos", url: "/tenant/products", icon: Package },
+  { title: "Catálogo Botânico", url: "/tenant/botanical-products", icon: Flower2 },
   { title: "Categorias", url: "/tenant/categories", icon: FolderTree },
   { title: "Clientes", url: "/tenant/customers", icon: Users2 },
   { title: "Locais", url: "/tenant/locations", icon: MapPin },
