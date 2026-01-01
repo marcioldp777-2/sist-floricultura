@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
         height_cm_min: 50,
         height_cm_max: 80,
         stems_per_bunch: 12,
-        light_level: 'indirect',
+        light_level: 'indirect_light',
         light_lux_min: 10000,
         light_lux_max: 25000,
         watering_frequency: 'daily',
@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
         height_cm_min: 40,
         height_cm_max: 70,
         pot_diameter_cm: 12,
-        light_level: 'indirect',
+        light_level: 'indirect_light',
         light_lux_min: 10000,
         light_lux_max: 20000,
         watering_frequency: 'weekly',
@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
         available_colors: ['Vermelho Clássico', 'Rosa Romântico', 'Branco Puro', 'Mix Colorido'],
         height_cm_min: 30,
         height_cm_max: 45,
-        light_level: 'indirect',
+        light_level: 'indirect_light',
         light_lux_min: 5000,
         light_lux_max: 15000,
         watering_frequency: 'daily',
@@ -646,7 +646,14 @@ Deno.serve(async (req) => {
 
   } catch (error: unknown) {
     console.error('Seed error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+        ? String((error as any).message)
+        : 'Unknown error'
+
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
