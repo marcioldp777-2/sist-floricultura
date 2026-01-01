@@ -24,6 +24,14 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Before seeding, clear existing demo data for this tenant
+    // (we avoid upsert+onConflict because the DB may not have the required unique constraints)
+    const cleanupTables = ['qr_codes', 'stock_lots', 'product_variants', 'botanical_products', 'locations'] as const
+    for (const table of cleanupTables) {
+      const { error } = await supabase.from(table).delete().eq('tenant_id', tenant_id)
+      if (error) throw error
+    }
+
     // 1. Create 2 store locations
     const locations = [
       {
@@ -38,7 +46,7 @@ Deno.serve(async (req) => {
         address_state: 'SP',
         address_zipcode: '01310-100',
         phone: '(11) 3333-1111',
-        is_active: true
+        is_active: true,
       },
       {
         tenant_id,
@@ -52,18 +60,18 @@ Deno.serve(async (req) => {
         address_state: 'SP',
         address_zipcode: '01419-000',
         phone: '(11) 3333-2222',
-        is_active: true
-      }
+        is_active: true,
+      },
     ]
 
     const { data: createdLocations, error: locError } = await supabase
       .from('locations')
-      .upsert(locations, { onConflict: 'tenant_id,code' })
+      .insert(locations)
       .select()
 
     if (locError) throw locError
 
-    const locationIds = createdLocations?.map(l => l.id) || []
+    const locationIds = createdLocations?.map((l) => l.id) || []
 
     // 2. Create 5 botanical products
     const botanicalProducts = [
@@ -295,7 +303,7 @@ Deno.serve(async (req) => {
 
     const { data: createdProducts, error: prodError } = await supabase
       .from('botanical_products')
-      .upsert(botanicalProducts, { onConflict: 'tenant_id,sku' })
+      .insert(botanicalProducts)
       .select()
 
     if (prodError) throw prodError
@@ -532,7 +540,7 @@ Deno.serve(async (req) => {
 
     const { data: createdVariants, error: varError } = await supabase
       .from('product_variants')
-      .upsert(productVariants, { onConflict: 'tenant_id,sku' })
+      .insert(productVariants)
       .select()
 
     if (varError) throw varError
@@ -577,7 +585,7 @@ Deno.serve(async (req) => {
 
     const { error: stockError } = await supabase
       .from('stock_lots')
-      .upsert(stockLots, { onConflict: 'tenant_id,lot_number' })
+      .insert(stockLots)
 
     if (stockError) throw stockError
 
