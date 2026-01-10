@@ -317,8 +317,26 @@ export default function QRCodesPage() {
   };
 
   // Get QR codes for printing
-  const getSelectedQRCodesForPrint = () => {
-    return filteredQRCodes?.filter((qr) => selectedQRCodes.includes(qr.id)) || [];
+  const getSelectedQRCodesForPrint = (): Array<{
+    id: string;
+    short_code: string;
+    campaign_name?: string | null;
+    product?: { name: string; sku: string; primary_image_url?: string } | null;
+  }> => {
+    const selected = filteredQRCodes?.filter((qr) => selectedQRCodes.includes(qr.id)) || [];
+    return selected.map((qr) => {
+      const productData = Array.isArray(qr.product) ? qr.product[0] : qr.product;
+      return {
+        id: qr.id,
+        short_code: qr.short_code,
+        campaign_name: qr.campaign_name,
+        product: productData ? {
+          name: productData.name,
+          sku: productData.sku,
+          primary_image_url: productData.primary_image_url || undefined,
+        } : null,
+      };
+    });
   };
 
   // Handle bulk create for all products without QR

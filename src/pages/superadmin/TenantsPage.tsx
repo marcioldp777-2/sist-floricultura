@@ -88,7 +88,7 @@ export default function TenantsPage() {
   const [newTenant, setNewTenant] = useState<Partial<TenantInsert>>({
     name: "",
     slug: "",
-    plan: "trial",
+    plan: "demo",
     status: "trial",
   });
   const { toast } = useToast();
@@ -123,7 +123,7 @@ export default function TenantsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
       setIsCreateOpen(false);
-      setNewTenant({ name: "", slug: "", plan: "trial", status: "trial" });
+      setNewTenant({ name: "", slug: "", plan: "demo", status: "trial" });
       toast({
         title: "Tenant criado",
         description: "O tenant foi criado com sucesso.",
