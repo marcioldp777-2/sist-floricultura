@@ -17,7 +17,6 @@ import OrdersPage from "./pages/tenant/OrdersPage";
 import ProductsPage from "./pages/tenant/ProductsPage";
 import BotanicalProductsPage from "./pages/tenant/BotanicalProductsPage";
 import QRCodesPage from "./pages/tenant/QRCodesPage";
-import PricingCalculatorPage from "./pages/tenant/PricingCalculatorPage";
 import CategoriesPage from "./pages/tenant/CategoriesPage";
 import CustomersPage from "./pages/tenant/CustomersPage";
 import LocationsPage from "./pages/tenant/LocationsPage";
@@ -117,14 +116,6 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["tenant_owner", "manager"]}>
                   <QRCodesPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tenant/pricing-calculator"
-              element={
-                <ProtectedRoute requiredRoles={["tenant_owner", "manager"]}>
-                  <PricingCalculatorPage />
                 </ProtectedRoute>
               }
             />

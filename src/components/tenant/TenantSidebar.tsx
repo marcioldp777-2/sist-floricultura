@@ -12,7 +12,6 @@ import {
   LifeBuoy,
   BarChart3,
   QrCode,
-  Calculator,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,7 +36,6 @@ const menuItems = [
   { title: "Produtos", url: "/tenant/products", icon: Package },
   { title: "Catálogo Botânico", url: "/tenant/botanical-products", icon: Flower2 },
   { title: "QR Codes", url: "/tenant/qr-codes", icon: QrCode },
-  { title: "Precificação", url: "/tenant/pricing-calculator", icon: Calculator },
   { title: "Categorias", url: "/tenant/categories", icon: FolderTree },
   { title: "Clientes", url: "/tenant/customers", icon: Users2 },
   { title: "Locais", url: "/tenant/locations", icon: MapPin },

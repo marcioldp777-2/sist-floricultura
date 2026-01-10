@@ -53,7 +53,6 @@ const roleLabels: Record<AppRole, string> = {
   seller: "Vendedor",
   driver: "Motorista",
   accountant: "Contador",
-  cashier: "Caixa",
 };
 
 export default function RolesPage() {
